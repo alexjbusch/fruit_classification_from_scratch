@@ -25,19 +25,21 @@ class Layer:
         self.weights = np.random.rand(num_neurons, input_length)
         self.biases = np.random.rand(num_neurons)
 
+        self.biases = np.reshape(self.biases, (1,num_neurons))
+
     def forward(self,x):        
         return sigmoid(np.sum(self.weights * x) + self.biases)
-
+        
 
 class NeuralNetwork:
     def __init__(self,input_length):
 
     
 
-        self.hidden_layer = Layer(5 ,input_length)
-        self.output_layer = Layer(1,5)
+        self.hidden_layer = Layer(3 ,input_length)
+        self.output_layer = Layer(1,3)
 
-        self.lr = .05
+        self.lr = .005
         
         self.layers = [
                 self.hidden_layer,
@@ -62,18 +64,37 @@ class NeuralNetwork:
         return output_vectors
 
     def backpropagate(self, output, y):
-        for i in range(len(output)-1,0,-1):
-            x = output[i-1]
-            for neuron in range(len(self.layers[i-1].weights)):
-                gradient = np.zeros(len(self.layers[i-1].weights[neuron]))
-                for weight in range(len(self.layers[i-1].weights[neuron])):
-                    gradient[weight] = -((y  -output[i][neuron]) * output[i][neuron] * (1-output[i][neuron]) * x[weight])
-                    
-                self.layers[i-1].weights[neuron] -= self.lr * gradient
 
-                bias_gradient = -((y-output[i][neuron]) * output[i][neuron] * (1-output[i][neuron]))
-                self.layers[i-1].biases[neuron] -= self.lr * bias_gradient
-                         
+        # output neuron update
+        
+        # this outputs a scalar
+        output_delta = (output[2] - y) * output[2]* (1-output[2])
+        # update the bias with this scalar
+        self.output_layer.biases -= output_delta * self.lr
+
+        # multiply the delta times the input to produce a 3-vector
+        output_gradient = output_delta * output[1]
+        # update the weights with this 3-vector
+        self.output_layer.weights -= output_gradient * self.lr
+
+
+        # hidden layer update
+
+        # this outputs a 3-vector
+        hidden_delta = output_gradient * self.output_layer.weights * (1 - output[1])
+        # update the biases with this 3 vector
+        self.hidden_layer.biases -= hidden_delta * self.lr
+        
+        # reshape it from (3,) to (3,1)
+        hidden_delta = np.reshape(hidden_delta, (3,1))
+        # reshape the input from (,10000) to (1,10000)
+        output[0] = np.reshape(output[0], (1,10000))
+        
+        # this returns a (3,10000) matrix
+        hidden_gradient = np.matmul(hidden_delta, output[0])
+        # update the hidden layer weights with this matrix
+        self.hidden_layer.weights -= hidden_gradient * self.lr
+
                    
 image = np.asarray(Image.open('test.jpg').convert('L'))
 input_vector = image.flatten()
@@ -137,12 +158,14 @@ def train():
 
         
         if image_index % 300 == 0:
-            print("IMAGE INDEX ", image_index)
-            print(image_class, prediction)
-            print(error)
+            #print("IMAGE INDEX ", image_index)
+            
+            if image_class ==0:
+                print(image_class, prediction)
+                print(error)
     
 
-epochs = 10
+epochs = 100
 for epoch in range(epochs):
     train()
 
