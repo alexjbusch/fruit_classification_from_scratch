@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import math
 import os
 
+import time
+
 def sigmoid(z):
     return 1/(1+np.exp(-z))
 
@@ -39,7 +41,7 @@ class NeuralNetwork:
         self.hidden_layer = Layer(3 ,input_length)
         self.output_layer = Layer(1,3)
 
-        self.lr = .005
+        self.lr = .00005
         
         self.layers = [
                 self.hidden_layer,
@@ -74,6 +76,7 @@ class NeuralNetwork:
 
         # multiply the delta times the input to produce a 3-vector
         output_gradient = output_delta * output[1]
+        
         # update the weights with this 3-vector
         self.output_layer.weights -= output_gradient * self.lr
 
@@ -81,19 +84,25 @@ class NeuralNetwork:
         # hidden layer update
 
         # this outputs a 3-vector
-        hidden_delta = output_gradient * self.output_layer.weights * (1 - output[1])
+        hidden_delta =  np.matmul(output_delta, self.output_layer.weights) * output[1] * (1-output[1])
+
+
         # update the biases with this 3 vector
-        self.hidden_layer.biases -= hidden_delta * self.lr
+        self.hidden_layer.biases += hidden_delta * self.lr
         
         # reshape it from (3,) to (3,1)
-        hidden_delta = np.reshape(hidden_delta, (3,1))
+        #hidden_delta = np.reshape(hidden_delta, (3,1))
+        
         # reshape the input from (,10000) to (1,10000)
         output[0] = np.reshape(output[0], (1,10000))
         
         # this returns a (3,10000) matrix
         hidden_gradient = np.matmul(hidden_delta, output[0])
         # update the hidden layer weights with this matrix
-        self.hidden_layer.weights -= hidden_gradient * self.lr
+        #self.hidden_layer.weights -= hidden_gradient * self.lr
+        self.hidden_layer.weights -= hidden_delta * self.lr
+
+
 
                    
 image = np.asarray(Image.open('test.jpg').convert('L'))
@@ -120,6 +129,9 @@ image_class = 1
 
 
 def train():
+
+    image_pair = ["",""]
+    
     image_class = 0
 
     image_index = 0
@@ -161,8 +173,14 @@ def train():
             #print("IMAGE INDEX ", image_index)
             
             if image_class ==0:
-                print(image_class, prediction)
-                print(error)
+                #image_pair[0] = str(image_class) + " : "+ str(prediction[0][0])
+                image_pair[0] = str(image_class) + str(error)
+            elif image_class == 1:
+                #image_pair[1] = str(image_class) + " : "+ str(prediction[0][0])
+                image_pair[1] = str(image_class) + str(error)
+            if image_pair[0] and image_pair[1]:
+                print(image_pair)
+                image_pair = ["",""]
     
 
 epochs = 100
